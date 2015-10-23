@@ -37,9 +37,13 @@ public class Bitap {
 	public Bitap(String needle, String haystack, Character[] alphabet) {
 		this(needle, haystack, new HashSet<Character>(Arrays.asList(alphabet)));
 	}
+	
+	public String getHaystack() {
+		return haystack.substring(0, haystack.length() - 1); // Remove trailing '&'
+	}
 
 	public void setHaystack(String haystack) {
-		this.haystack = haystack;
+		this.haystack = haystack + "&";
 	}
 	
 	/**

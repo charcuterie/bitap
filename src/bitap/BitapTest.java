@@ -258,4 +258,27 @@ public class BitapTest {
 		test.add(57);
 		assertEquals(test, pos);
 	}
+	
+	@Test
+	public void changeHaystackTest() {
+		String haystack = "TGATGCATTCGTAGATGC";
+		String needle = "ATTC";
+		Bitap bitap = new Bitap(needle, haystack, alphabet);
+
+		List<Integer> pos = bitap.baezaYatesGonnet();
+		List<Integer> test = new ArrayList<Integer>();
+		test.add(6);
+		assertEquals(test, pos);
+
+		bitap.setHaystack("GATGCATTCGTAGATGC");
+		pos = bitap.baezaYatesGonnet();
+		test.clear();
+		test.add(5);
+		assertEquals(test, pos);
+		
+		bitap.setHaystack("GATGCATCCCGTAGATGC");
+		pos = bitap.baezaYatesGonnet();
+		test.clear();
+		assertEquals(test, pos);
+	}
 }
