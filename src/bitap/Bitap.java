@@ -21,29 +21,36 @@ import java.util.Set;
  * @author Mason M Lai
  */
 public class Bitap {
-	private String needle;
-	private String haystack;
-	private Map<Character, Long> alphabetMasks;
-	private Set<Character> alphabet;
+	private final String needle;
+	private final Map<Character, Long> alphabetMasks;
+	private final Set<Character> alphabet;
 	
-	public Bitap(String needle, String haystack, Set<Character> alphabet) {
+	/**
+	 * Bitap constructor. Do not include '&' in the needle or alphabet.
+	 * The character '&' is used as a sentinel value, and there are no checks to
+	 * ensure '&' does not appear elsewhere.
+	 * @param needle - the substring to search for.
+	 * @param alphabet - the total set of characters composing both the needle
+	 * and the haystack.
+	 */
+	public Bitap(String needle, Set<Character> alphabet) {
 		this.needle = needle;
-		this.haystack = haystack + "&";
 		this.alphabet = alphabet;
 		alphabet.add('&');
 		alphabetMasks = generateAlphabetMasks();
 	}
 	
-	public Bitap(String needle, String haystack, Character[] alphabet) {
-		this(needle, haystack, new HashSet<Character>(Arrays.asList(alphabet)));
-	}
-	
-	public String getHaystack() {
-		return haystack.substring(0, haystack.length() - 1); // Remove trailing '&'
-	}
-
-	public void setHaystack(String haystack) {
-		this.haystack = haystack + "&";
+	/**
+	 * Bitap constructor. Do not include '&' in the needle, haystack, or alphabet.
+	 * The character '&' is used as a sentinel value, and there are no checks to
+	 * ensure '&' does not appear elsewhere.
+	 * @param needle - the substring to search for.
+	 * @param haystack - the string to search in.
+	 * @param alphabet - the total set of characters (as an array) composing both
+	 * the needle and the haystack.
+	 */
+	public Bitap(String needle, Character[] alphabet) {
+		this(needle, new HashSet<Character>(Arrays.asList(alphabet)));
 	}
 	
 	/**
@@ -113,7 +120,9 @@ public class Bitap {
 	 * @return an ArrayList<Integer> containing the positions where a
 	 * valid substring match can start
 	 */
-	public List<Integer> baezaYatesGonnet() {
+	public List<Integer> baezaYatesGonnet(String haystack) {
+		haystack = haystack + "&"; // sentinel value
+		
 		List<Integer> locatedPositions = new ArrayList<Integer>();
 		long bitArray = ~1;
 
@@ -128,9 +137,7 @@ public class Bitap {
 		return locatedPositions;
 	}
 	
-	/**
-	 * Wu-Manber algorithm. Finds all approximate (within a given
-	 * Levenshtein distance) matches of a needle within a haystack.
+	/* Wu-Manber implementation notes
 	 * 
 	 * Most implementations online start from the beginning of the haystack
 	 * and proceed towards the end. When a zero bubbles up to the end of the
@@ -141,12 +148,19 @@ public class Bitap {
 	 * needle, and proceeds to the start of the haystack. The "end position"
 	 * that this implementation finds is really the start position, since
 	 * the string search is being done with all text "flipped".
+	 */
+	
+	/**
+	 * Wu-Manber algorithm. Finds all approximate (within a given
+	 * Levenshtein distance) matches of a needle within a haystack.
 	 * 
 	 * @param lev - the maximum Levenshtein distance for a substring match
 	 * @return an ArrayList<Integer> containing the positions where a
 	 * valid substring match can start
 	 */
-	public List<Integer> wuManber(int lev) {
+	public List<Integer> wuManber(String haystack, int lev) {
+		haystack = haystack + "&";  // sentinel value
+		
 		List<Integer> locatedPositions = new ArrayList<Integer>();
 		long[] bitArray = generateBitArray(lev);
 
@@ -170,5 +184,48 @@ public class Bitap {
 		
 		Collections.sort(locatedPositions);
 		return locatedPositions;
+	}
+
+	/**
+	 * Wu-Manber algorithm. Checks if any match (within a given Levenshtein
+	 * distance) of a needle exists within a haystack.
+	 * 
+	 * Most implementations online start from the beginning of the haystack
+	 * and proceed towards the end. When a zero bubbles up to the end of the
+	 * bit array, that position (the end position) is recorded, and the
+	 * needle length subtracted to get the start position. Due to indels,
+	 * this start position is often incorrect. As a consequence, this
+	 * implementation starts from the end of the haystack, with a reversed
+	 * needle, and proceeds to the start of the haystack. The "end position"
+	 * that this implementation finds is really the start position, since
+	 * the string search is being done with all text "flipped".
+	 * 
+	 * @param lev - the maximum Levenshtein distance for a substring match
+	 * @return a boolean if the needle exists within the haystack
+	 */
+	public boolean within(String haystack, int lev) {
+		haystack = haystack + "&";
+		
+		long[] bitArray = generateBitArray(lev);
+
+		for (int i = haystack.length() - 1; i >= 0; i--) {
+			long[] old = bitArray.clone();
+			bitArray[0] = (old[0] << 1) | alphabetMasks.get(haystack.charAt(i));
+			if (lev > 0) {
+				for (int k = 1; k <= lev; k++) {
+					long ins = old[k - 1];
+					long sub = ins << 1;
+					long del = bitArray[k - 1] << 1;
+					long match = (old[k] << 1) | alphabetMasks.get(haystack.charAt(i));
+					bitArray[k] = ins & del & sub & match;
+				}
+			}
+			
+			if (0 == (bitArray[lev] & (1 << needle.length()))) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 }
